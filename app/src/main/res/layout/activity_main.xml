@@ -1,42 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/containner"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    tools:context=".MainActivity">
-
-    <Button
-        android:id="@+id/btnChooseImage"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="86dp"
-        android:text="Elegir Imagen" />
-
-    <ImageView
-        android:id="@+id/imageView"
-        android:layout_width="395dp"
-        android:layout_height="318dp"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="16dp"
-        android:adjustViewBounds="true"
-        android:scaleType="fitCenter"
-        android:src="@drawable/placeholder_image" />
-
+    android:padding="16dp">
 
     <TextView
-        android:id="@+id/resultText"
-        android:layout_width="match_parent"
+        android:id="@+id/txtTitulo"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/btnChooseImage"
-        android:layout_alignParentStart="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginStart="30dp"
-        android:layout_marginTop="62dp"
-        android:text=""
-        android:textSize="16sp" />
-</RelativeLayout>
+        android:layout_margin="1dp"
+        android:background="#FFEB3B"
+        android:text="Google ML Kit QR"
+        android:textAlignment="center"
+        android:textSize="34sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
+    <ImageView
+        android:id="@+id/image_view"
+        android:layout_width="0dp"
+        android:layout_height="200dp"
+        android:layout_marginTop="80dp"
+        android:background="@android:color/darker_gray"
+        android:scaleType="centerCrop"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.468"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/txtTitulo" />
+
+    <TextView
+        android:id="@+id/txtresultados"
+        android:layout_width="373dp"
+        android:layout_height="49dp"
+        android:layout_marginTop="40dp"
+        android:text="Resultados:"
+        android:textAlignment="center"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/image_view" />
+
+
+    <Button
+        android:id="@+id/bttcamara"
+        android:layout_width="360dp"
+        android:layout_height="49dp"
+        android:layout_marginTop="48dp"
+        android:background="#FFFFFF"
+        android:backgroundTint="#FFFFFF"
+        android:onClick="selectImageSource"
+        android:text="Camara/Galeria"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.686"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/txtresultados" />
+
+    <Button
+        android:id="@+id/btscanner"
+        android:layout_width="311dp"
+        android:layout_height="49dp"
+        android:layout_marginTop="20dp"
+        android:background="#FFFFFF"
+        android:backgroundTint="#FFFFFF"
+        android:onClick="onScanQRButtonClick"
+        android:text="Escanear QR o Código de Barras"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.491"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/bttcamara" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

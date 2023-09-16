@@ -6,18 +6,13 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.mlkit.vision.barcode.BarcodeScanner;
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
 import com.google.mlkit.vision.barcode.BarcodeScanning;
 import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.common.InputImage;
@@ -27,85 +22,115 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int REQUEST_IMAGE_CAPTURE = 100;
-    private static final int REQUEST_IMAGE_PICK = 200;
+    private static final int REQUEST_CAMERA = 111;
+    private static final int REQUEST_GALLERY = 113;
+    private boolean isCameraSource = true;
 
-    private ImageView imageView;
-    private TextView resultText;
-    private Bitmap imageBitmap;
+    private Bitmap mSelectedImage;
+    private ImageView mImageView;
+    private TextView txtResults;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        imageView = findViewById(R.id.imageView);
-        resultText = findViewById(R.id.resultText);
-        Button chooseImageButton = findViewById(R.id.btnChooseImage);
-
-        chooseImageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Abre una actividad para seleccionar una imagen de la galería.
-                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                startActivityForResult(intent, REQUEST_IMAGE_PICK);
-            }
-        });
+        initializeViews();
     }
 
+    private void initializeViews() {
+        txtResults = findViewById(R.id.txtresultados);
+        mImageView = findViewById(R.id.image_view);
+    }
+
+    public void onCameraButtonClick(View view) {
+        launchCamera();
+    }
+    public void onGalleryButtonClick(View view) {
+        isCameraSource = false;
+        launchGallery();
+    }
+
+    private void launchCamera() {
+        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE_SECURE);
+        startActivityForResult(cameraIntent, REQUEST_CAMERA);
+    }
+    private void launchGallery() {
+        Intent galleryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(galleryIntent, REQUEST_GALLERY);
+    }
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
-        if (resultCode == RESULT_OK) {
-            if (requestCode == REQUEST_IMAGE_PICK) {
-                // Si se elige una imagen de la galería, procesa la imagen.
-                Uri imageUri = data.getData();
-                try {
-                    imageBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
-                    imageView.setImageBitmap(imageBitmap);
-                    detectBarcodeAndQR();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+        if (resultCode == RESULT_OK && data != null) {
+            handleImageCapture(data);
         }
     }
 
-    private void detectBarcodeAndQR() {
-        if (imageBitmap == null) {
-            return;
+    /*private void handleImageCapture(int requestCode, Intent data) {
+        try {
+            mSelectedImage = requestCode == REQUEST_CAMERA ? (Bitmap) data.getExtras().get("data")
+                    : MediaStore.Images.Media.getBitmap(getContentResolver(), data.getData());
+            displayCapturedImage();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+    }*/
 
-        BarcodeScannerOptions options =
-                new BarcodeScannerOptions.Builder()
-                        .setBarcodeFormats(Barcode.FORMAT_QR_CODE, Barcode.FORMAT_CODE_128)
-                        .build();
+    private void displayCapturedImage() {
+        mImageView.setImageBitmap(mSelectedImage);
+    }
 
-        BarcodeScanner scanner = BarcodeScanning.getClient(options);
-        InputImage image = InputImage.fromBitmap(imageBitmap, 0);
+    public void onScanQRButtonClick(View v) {
+        if (mSelectedImage != null) {
+            scanImageForQR();
+        } else {
+            txtResults.setText("No image to scan");
+        }
+    }
 
+    private void scanImageForQR() {
+        InputImage image = InputImage.fromBitmap(mSelectedImage, 0);
+        BarcodeScanner scanner = BarcodeScanning.getClient();
+        processImage(scanner, image);
+    }
+
+    private void processImage(BarcodeScanner scanner, InputImage image) {
         scanner.process(image)
-                .addOnSuccessListener(new OnSuccessListener<List<Barcode>>() {
-                    @Override
-                    public void onSuccess(List<Barcode> barcodes) {
-                        if (barcodes.size() > 0) {
-                            StringBuilder result = new StringBuilder();
-                            for (Barcode barcode : barcodes) {
-                                result.append("Tipo de código: ").append(barcode.getFormat()).append("\n");
-                                result.append("Valor: ").append(barcode.getRawValue()).append("\n\n");
-                            }
-                            resultText.setText(result.toString());
-                        } else {
-                            resultText.setText("No se encontraron códigos de barras ni códigos QR.");
-                        }
+                .addOnSuccessListener(this::displayBarcodes)
+                .addOnFailureListener(e -> txtResults.setText("Error al procesar imagen"));
+    }
+
+    private void displayBarcodes(List<Barcode> barcodes) {
+        for (Barcode barcode : barcodes) {
+            String value = barcode.getDisplayValue();
+            txtResults.setText(value);
+        }
+    }
+    public void selectImageSource(View view) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Seleccionar fuente de imagen")
+                .setItems(new CharSequence[]{"Cámara", "Galería"}, (dialog, which) -> {
+                    if (which == 0) {
+                        isCameraSource = true;
+                        launchCamera();
+                    } else {
+                        isCameraSource = false;
+                        launchGallery();
                     }
                 })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        resultText.setText("Error al detectar códigos: " + e.getMessage());
-                    }
-                });
+                .show();
+    }
+    private void handleImageCapture(Intent data) {
+        try {
+            if (isCameraSource) {
+                mSelectedImage = (Bitmap) data.getExtras().get("data");
+            } else {
+                Uri imageUri = data.getData();
+                mSelectedImage = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+            }
+            displayCapturedImage();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
